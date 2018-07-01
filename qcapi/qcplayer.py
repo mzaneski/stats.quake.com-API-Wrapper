@@ -1,3 +1,5 @@
+import asyncio
+import aiohttp
 import requests
 from .api import api_path
 from types import SimpleNamespace
@@ -58,6 +60,21 @@ class QCPlayer(object):
             raise ValueError("No player with name known")
         data = query.json()
         return QCPlayer(data)
+
+    @staticmethod
+    async def from_name_coro(name):
+        async with aiohttp.ClientSession() as session:
+            path = api_path("Player/Stats", {"name": name})
+            async with session.get(path) as query:
+                if query.status != 200:
+                    raise Exception("Could not get API resource")
+                if query.headers["content-type"] == "text/html":
+                    raise ValueError("No player with name known")
+
+                data = await query.json()
+                query.close()
+
+                return QCPlayer(data)
 
     def __init__(self, model):
         self.model = SimpleNamespace(**model)
